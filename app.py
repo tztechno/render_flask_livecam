@@ -1,25 +1,22 @@
 
+
 from flask import Flask, render_template, Response
 from PIL import Image
 import io
-import cv2  # カメラのキャプチャには依然としてOpenCVが必要です
+import imageio
 
 app = Flask(__name__)
 
 def generate_frames():
-    camera = cv2.VideoCapture(0)
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            # OpenCVの画像をPillowで処理する
-            image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            buffer = io.BytesIO()
-            image.save(buffer, format="JPEG")
-            frame = buffer.getvalue()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    camera = imageio.get_reader("<video0>", format="ffmpeg")
+    for frame in camera:
+        # imageioのフレームをPillowのImageオブジェクトに変換
+        image = Image.fromarray(frame)
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG")
+        frame = buffer.getvalue()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 @app.route('/')
 def index():

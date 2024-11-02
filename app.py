@@ -1,19 +1,21 @@
 from flask import Flask, render_template, Response
-import cv2
+import imageio
+from PIL import Image
+import io
 
 app = Flask(__name__)
 
 def generate_frames():
-    camera = cv2.VideoCapture(0)
+    camera = imageio.get_reader('<video0>')  # デフォルトカメラを取得
     while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        frame = camera.get_next_data()  # フレームを取得
+        # PILを使って画像を処理（必要に応じて）
+        image = Image.fromarray(frame)  
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG')  # JPEGフォーマットで保存
+        frame = buffer.getvalue()  # バイナリデータを取得
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 @app.route('/')
 def index():

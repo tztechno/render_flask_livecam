@@ -1,15 +1,54 @@
 <!DOCTYPE html>
-<html lang="ja">
-
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Camera</title>
+    <title>Camera Stream</title>
+    <style>
+        #video {
+            width: 640px;
+            height: 480px;
+            background-color: #ddd;
+        }
+        .button-container {
+            margin: 20px 0;
+        }
+    </style>
 </head>
-
 <body>
-    <h1>ライブカメラ</h1>
-    <img src="{{ url_for('video_feed') }}" alt="Live Camera Feed">
-</body>
+    <h1>Camera Stream</h1>
+    <div class="button-container">
+        <button onclick="startCamera()">Start Camera</button>
+        <button onclick="stopCamera()">Stop Camera</button>
+    </div>
+    <video id="video" autoplay playsinline></video>
 
+    <script>
+        let stream = null;
+        const video = document.getElementById('video');
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true,
+                    audio: false
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('カメラへのアクセスに失敗しました。カメラの許可を確認してください。');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+
+        // ページを離れる時にカメラを停止
+        window.onbeforeunload = function() {
+            stopCamera();
+        };
+    </script>
+</body>
 </html>

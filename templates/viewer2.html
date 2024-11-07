@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html lang="ja">
-
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viewer 2 - Live Camera</title>
+    <title>Camera Stream - Viewer2</title>
+    <style>
+        #video {
+            width: 640px;
+            height: 480px;
+            background-color: #ddd;
+        }
+    </style>
 </head>
-
 <body>
-    <h1>ライブカメラ - Viewer 2</h1>
-    <img src="{{ url_for('video_feed') }}" alt="Live Camera Feed">
+    <h1>Camera Stream - Viewer2</h1>
+    <video id="video" autoplay playsinline></video>
+    <!-- ここにWebRTCのシグナリング処理を追加する必要があります -->
 </body>
-
 </html>

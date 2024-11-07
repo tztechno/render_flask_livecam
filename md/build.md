@@ -1,3 +1,4 @@
+```
 python3 -m venv venv
 source venv/bin/activate
 python3 app.py
@@ -17,3 +18,5 @@ git add .
 git commit -m "2024-11-02"
 git push -u origin master
 git push -f origin master
+
+```

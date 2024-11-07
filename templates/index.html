@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Camera Stream</title>
+    <title>Camera Stream - Broadcaster</title>
     <style>
         #video {
             width: 640px;
@@ -14,16 +14,37 @@
     </style>
 </head>
 <body>
-    <h1>Camera Stream</h1>
+    <h1>Camera Stream - Broadcaster</h1>
     <div class="button-container">
         <button onclick="startCamera()">Start Camera</button>
         <button onclick="stopCamera()">Stop Camera</button>
     </div>
     <video id="video" autoplay playsinline></video>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
+        const socket = io();
         let stream = null;
+        let peerConnections = {};
         const video = document.getElementById('video');
+
+        socket.on('connect', () => {
+            socket.emit('register', { type: 'broadcaster' });
+        });
+
+        socket.on('answer', async (data) => {
+            const pc = peerConnections[data.id];
+            if (pc) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+        });
+
+        socket.on('ice_candidate', async (data) => {
+            const pc = peerConnections[data.id];
+            if (pc) {
+                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        });
 
         async function startCamera() {
             try {
@@ -32,20 +53,52 @@
                     audio: false
                 });
                 video.srcObject = stream;
+                createPeerConnections();
             } catch (err) {
                 console.error('Error accessing camera:', err);
-                alert('カメラへのアクセスに失敗しました。カメラの許可を確認してください。');
+                alert('カメラへのアクセスに失敗しました。');
             }
+        }
+
+        async function createPeerConnections() {
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' }
+                ]
+            };
+
+            const pc = new RTCPeerConnection(configuration);
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice_candidate', {
+                        candidate: event.candidate,
+                        id: socket.id
+                    });
+                }
+            };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            socket.emit('offer', {
+                offer: offer,
+                id: socket.id
+            });
+
+            peerConnections[socket.id] = pc;
         }
 
         function stopCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
+                Object.values(peerConnections).forEach(pc => pc.close());
+                peerConnections = {};
             }
         }
 
-        // ページを離れる時にカメラを停止
         window.onbeforeunload = function() {
             stopCamera();
         };

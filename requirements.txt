@@ -1,4 +1,4 @@
 Flask
-imageio
+opencv-python
 Pillow
 gunicorn

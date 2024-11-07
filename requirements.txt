@@ -3,5 +3,6 @@ opencv-python
 Pillow
 gunicorn
 flask-socketio
-python-socketio
-eventlet
+eventlet==0.33.3
+python-engineio==4.8.0
+python-socketio==5.10.0

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Camera Stream - Viewer1</title>
+    <title>Camera Stream - Viewer</title>
     <style>
         #video {
             width: 640px;
@@ -11,8 +11,64 @@
     </style>
 </head>
 <body>
-    <h1>Camera Stream - Viewer1</h1>
+    <h1>Camera Stream - Viewer</h1>
     <video id="video" autoplay playsinline></video>
-    <!-- ここにWebRTCのシグナリング処理を追加する必要があります -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const video = document.getElementById('video');
+        let peerConnection;
+
+        socket.on('connect', () => {
+            socket.emit('register', { type: 'viewer' });
+        });
+
+        socket.on('offer', async (data) => {
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' }
+                ]
+            };
+
+            peerConnection = new RTCPeerConnection(configuration);
+
+            peerConnection.ontrack = (event) => {
+                if (video.srcObject !== event.streams[0]) {
+                    video.srcObject = event.streams[0];
+                }
+            };
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice_candidate', {
+                        candidate: event.candidate,
+                        id: data.id
+                    });
+                }
+            };
+
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            socket.emit('answer', {
+                answer: answer,
+                id: data.id
+            });
+        });
+
+        socket.on('ice_candidate', async (data) => {
+            if (peerConnection) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        });
+
+        window.onbeforeunload = function() {
+            if (peerConnection) {
+                peerConnection.close();
+            }
+        };
+    </script>
 </body>
 </html>

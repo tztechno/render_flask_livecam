@@ -2,3 +2,6 @@ Flask
 opencv-python
 Pillow
 gunicorn
+flask-socketio
+python-socketio
+eventlet
